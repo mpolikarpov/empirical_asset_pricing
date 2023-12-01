@@ -1,5 +1,5 @@
 import pandas as pd
-
+# Bonjour Monsieur
 # import data
 
 m = pd.read_csv('/Users/mikhail/PycharmProjects/Empirical_Asset_Pricing/Data/m.csv')
