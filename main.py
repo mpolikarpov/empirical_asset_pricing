@@ -17,6 +17,19 @@ df = pd.merge(vwm, m, on='Date')
 df['eMkt'] = df['Mkt-RF']/100
 df['rf'] = df['RF']/100
 
+# excess returns on the test assets
+
+df['Lo 10'] = df['Lo 10']/100 - df['rf']
+df['Dec-02'] = df['Dec-02']/100 - df['rf']
+df['Dec-03'] = df['Dec-03']/100 - df['rf']
+df['Dec-04'] = df['Dec-04']/100 - df['rf']
+df['Dec-05'] = df['Dec-05']/100 - df['rf']
+df['Dec-06'] = df['Dec-06']/100 - df['rf']
+df['Dec-07'] = df['Dec-07']/100 - df['rf']
+df['Dec-08'] = df['Dec-08']/100 - df['rf']
+df['Dec-09'] = df['Dec-09']/100 - df['rf']
+df['Hi 10'] = df['Hi 10']/100 - df['rf']
+
 """
 Matlab code
 
