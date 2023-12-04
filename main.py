@@ -1,9 +1,13 @@
 import pandas as pd
-# Bonjour Monsieur
+import numpy as np
+from scipy.stats import f
+from scipy.stats import chi2
+import statsmodels.api as sm
+
 # import data
 
-m = pd.read_csv('/Users/mikhail/PycharmProjects/Empirical_Asset_Pricing/Data/m.csv')
-vwm = pd.read_csv('/Users/mikhail/PycharmProjects/Empirical_Asset_Pricing/Data/vwm.csv')
+m = pd.read_csv('m.csv')
+vwm = pd.read_csv('vwm.csv')
 
 # define a date variable
 
@@ -17,18 +21,145 @@ df = pd.merge(vwm, m, on='Date')
 df['eMkt'] = df['Mkt-RF']/100
 df['rf'] = df['RF']/100
 
-# excess returns on the test assets
 
-df['Lo 10'] = df['Lo 10']/100 - df['rf']
-df['Dec-02'] = df['Dec-02']/100 - df['rf']
-df['Dec-03'] = df['Dec-03']/100 - df['rf']
-df['Dec-04'] = df['Dec-04']/100 - df['rf']
-df['Dec-05'] = df['Dec-05']/100 - df['rf']
-df['Dec-06'] = df['Dec-06']/100 - df['rf']
-df['Dec-07'] = df['Dec-07']/100 - df['rf']
-df['Dec-08'] = df['Dec-08']/100 - df['rf']
-df['Dec-09'] = df['Dec-09']/100 - df['rf']
-df['Hi 10'] = df['Hi 10']/100 - df['rf']
+portfolios = ['Lo 10', 'Dec-02', 'Dec-03', 'Dec-04', 'Dec-05', 'Dec-06', 'Dec-07', 'Dec-08', 'Dec-09', 'Hi 10']
+
+results = []
+residuals = []
+
+for portfolio in portfolios:
+    excess_return = df[portfolio] - df['RF']  # Calculating excess return for each portfolio
+    model = sm.OLS(excess_return, sm.add_constant(df['Mkt-RF']))
+    result = model.fit()
+
+    residuals.append(result.resid)
+
+    # Append the results summary to the list
+    results.append({
+        'Portfolio': portfolio,
+        'Alpha': result.params['const'],
+        'Beta': result.params['Mkt-RF'],
+        'Alpha T-stat': result.tvalues['const'],
+        'Beta T-stat': result.tvalues['Mkt-RF'],
+        'R-squared': result.rsquared,
+        'P-value': result.pvalues['Mkt-RF']
+    })
+
+# Convert results to a DataFrame
+results_df = pd.DataFrame(results)
+print(results_df)
+
+# Number of portfolios
+num_portfolios = len(results)
+
+# Combine residuals into a matrix
+residual_matrix = np.column_stack(residuals)
+
+# Calculate the residual covariance matrix
+residual_covariance = np.cov(residual_matrix)
+
+# Calculate the mean excess return across portfolios
+mean_excess_returns = np.array([result['Alpha'] for result in results])
+
+# Number of portfolios
+num_portfolios = len(results)
+
+# Combine residuals into a matrix
+residual_matrix = np.column_stack(residuals)
+
+# Calculate White's standard errors (heteroscedasticity-consistent standard errors)
+white_cov = np.linalg.inv(residual_matrix @ residual_matrix.T) @ (residual_matrix @ residual_matrix.T) @ residual_covariance @ (residual_matrix @ residual_matrix.T) @ np.linalg.inv(residual_matrix @ residual_matrix.T)
+white_std_errors = np.sqrt(np.diag(white_cov))
+
+# Check for NaN or infinite values in white_std_errors
+if np.any(np.isnan(white_std_errors)) or np.any(np.isinf(white_std_errors)):
+    print("NaN or infinite values encountered in White's standard errors calculation. Check your data or approach.")
+
+# Calculate Newey-West standard errors with lag length determined by Barlett kernel
+T = len(residuals[0])  # Number of observations
+lag = int(np.ceil(4 * (T / 100) ** (2 / 9)))  # Lag length using Barlett kernel
+newey_west_cov = sm.stats.sandwich_covariance.cov_hac(result, nlags=lag)
+newey_west_std_errors = np.sqrt(np.diag(newey_west_cov))
+
+# Print standard errors for each coefficient
+print("White's Standard Errors:", white_std_errors)
+print("Newey-West Standard Errors:", newey_west_std_errors)
+
+# Calculate the mean excess return across portfolios
+mean_excess_returns = np.array([result['Alpha'] for result in results])
+
+
+def grs_test(resid: np.ndarray, alpha: np.ndarray, factors: np.ndarray) -> tuple:
+    """ Perform the Gibbons, Ross and Shaken (1989) test.
+        :param resid: Matrix of residuals from the OLS of size TxK.
+        :param alpha: Vector of alphas from the OLS of size Kx1.
+        :param factors: Matrix of factor returns of size TxJ.
+        :return Test statistic and pValue of the test statistic.
+    """
+    # Determine the time series and assets
+    iT, iK = resid.shape
+
+    # Determine the amount of risk factors
+    iJ = factors.shape[1]
+
+    # Input size checks
+    assert alpha.shape == (iK, 1)
+    assert factors.shape == (iT, iJ)
+
+    # Covariance of the residuals, variables are in columns.
+    mCov = np.cov(resid, rowvar=False)
+
+    # Mean of excess returns of the risk factors
+    vMuRF = np.nanmean(factors, axis=0)
+
+    try:
+        assert vMuRF.shape == (1, iJ)
+    except AssertionError:
+        vMuRF = vMuRF.reshape(1, iJ)
+
+    # Duplicate this series for T timestamps
+    mMuRF = np.repeat(vMuRF, iT, axis=0)
+
+    # Test statistic
+    mCovRF = (factors - mMuRF).T @ (factors - mMuRF) / (iT - 1)
+    dTestStat = (iT / iK) * ((iT - iK - iJ) / (iT - iJ - 1)) * \
+                (alpha.T @ (np.linalg.inv(mCov) @ alpha)) / \
+                (1 + (vMuRF @ (np.linalg.inv(mCovRF) @ vMuRF.T)))
+
+    pVal = 1 - f.cdf(dTestStat, iK, iT-iK-1)
+
+    return dTestStat, pVal
+
+# Call the GRS test function
+grs_statistic, grs_p_value = grs_test(residual_matrix, mean_excess_returns.reshape(-1, 1), df[['Mkt-RF']].values)
+
+print("GRS Test Statistic:", grs_statistic)
+print("p-value:", grs_p_value)
+
+
+# Calculate the Wald statistic for the joint test that all alphas are zero
+wald_statistic = grs_statistic * (len(residuals[0]) - len(mean_excess_returns) - 1) / len(mean_excess_returns)
+
+# Calculate the p-value using F-distribution
+wald_p_value = 1 - f.cdf(wald_statistic, len(mean_excess_returns), len(residuals[0]) - len(mean_excess_returns) - 1)
+
+print("Wald Statistic:", wald_statistic)
+print("p-value:", wald_p_value)
+
+# Calculate the Wald statistic using White's standard errors
+alpha_vector = mean_excess_returns.reshape(-1, 1)
+wald_statistic_white = alpha_vector.T @ np.linalg.inv(white_cov) @ alpha_vector
+wald_p_value_white = 1 - chi2.cdf(wald_statistic_white, len(mean_excess_returns))
+
+# Calculate the Wald statistic using Newey-West standard errors with lag
+wald_statistic_newey_west_lagged = alpha_vector.T @ np.linalg.inv(newey_west_cov) @ alpha_vector
+wald_p_value_newey_west_lagged = 1 - chi2.cdf(wald_statistic_newey_west_lagged, len(mean_excess_returns))
+
+print("Wald Statistic (White's Standard Errors):", wald_statistic_white)
+print("p-value (White's Standard Errors):", wald_p_value_white)
+print("\nWald Statistic (Newey-West Standard Errors with Lag):", wald_statistic_newey_west_lagged)
+print("p-value (Newey-West Standard Errors with Lag):", wald_p_value_newey_west_lagged)
+
 
 """
 Matlab code
