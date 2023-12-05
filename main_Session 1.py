@@ -21,7 +21,6 @@ df = pd.merge(vwm, m, on='Date')
 df['eMkt'] = df['Mkt-RF']/100
 df['rf'] = df['RF']/100
 
-
 portfolios = ['Lo 10', 'Dec-02', 'Dec-03', 'Dec-04', 'Dec-05', 'Dec-06', 'Dec-07', 'Dec-08', 'Dec-09', 'Hi 10']
 
 results = []
@@ -41,13 +40,18 @@ for portfolio in portfolios:
         'Beta': result.params['Mkt-RF'],
         'Alpha T-stat': result.tvalues['const'],
         'Beta T-stat': result.tvalues['Mkt-RF'],
+        'Alpha White se': result.get_robustcov_results(cov_type='HC0').HC1_se[0],
+        'Beta White se': result.get_robustcov_results(cov_type='HC0').HC1_se[1],
+        'Alpha White T-stat': result.params['const'] / result.get_robustcov_results(cov_type='HC1').HC1_se[0],
+        'Beta White T-stat': result.params['Mkt-RF'] / result.get_robustcov_results(cov_type='HC1').HC1_se[1],
         'R-squared': result.rsquared,
         'P-value': result.pvalues['Mkt-RF']
     })
 
 # Convert results to a DataFrame
 results_df = pd.DataFrame(results)
-print(results_df)
+white_test = ['Portfolio','Alpha', 'Beta', 'Alpha White se', 'Beta White se', 'Alpha White T-stat', 'Beta White T-stat']
+results_df[white_test].to_csv('white_results.csv', index=True)
 
 # Number of portfolios
 num_portfolios = len(results)
@@ -60,12 +64,6 @@ residual_covariance = np.cov(residual_matrix)
 
 # Calculate the mean excess return across portfolios
 mean_excess_returns = np.array([result['Alpha'] for result in results])
-
-# Number of portfolios
-num_portfolios = len(results)
-
-# Combine residuals into a matrix
-residual_matrix = np.column_stack(residuals)
 
 # Calculate White's standard errors (heteroscedasticity-consistent standard errors)
 white_cov = np.linalg.inv(residual_matrix @ residual_matrix.T) @ (residual_matrix @ residual_matrix.T) @ residual_covariance @ (residual_matrix @ residual_matrix.T) @ np.linalg.inv(residual_matrix @ residual_matrix.T)
@@ -82,12 +80,7 @@ newey_west_cov = sm.stats.sandwich_covariance.cov_hac(result, nlags=lag)
 newey_west_std_errors = np.sqrt(np.diag(newey_west_cov))
 
 # Print standard errors for each coefficient
-print("White's Standard Errors:", white_std_errors)
 print("Newey-West Standard Errors:", newey_west_std_errors)
-
-# Calculate the mean excess return across portfolios
-mean_excess_returns = np.array([result['Alpha'] for result in results])
-
 
 def grs_test(resid: np.ndarray, alpha: np.ndarray, factors: np.ndarray) -> tuple:
     """ Perform the Gibbons, Ross and Shaken (1989) test.
