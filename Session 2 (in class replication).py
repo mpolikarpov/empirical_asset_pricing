@@ -49,31 +49,55 @@ for dep_var in dependent_variables:
 
 # Construct a DataFrame from the rolling window results
 beta_df = pd.DataFrame(rw_results)
+# Drop Industries with NaN values in beta_df
+beta_df.dropna(axis=1, inplace=True)
 
+# Fama-MacBeth regression
+fm_monthly_results = []  # Store monthly regression results
 
-# Fama-Macbeth regression
-# Lag to determine all betas at time t-1
-for column in beta_df.columns:
-    beta_df[column] = beta_df[column].shift(1)
-beta_df = beta_df[1:]  # Remove the first row with NaNs
-
-# Industry portfolios adjusted to match the length of beta_df
+# Tail the original dataframe to match the length of beta_df
 df_adj = df.tail(len(beta_df))
 
-fm_results = []
+dependent_variables = beta_df.columns
 
-for portfolio in dependent_variables:
-    ret = df_adj[portfolio]  # Excess return for each portfolio
-    model = sm.OLS(ret, sm.add_constant(df_adj['emkt']))
+# Loop through each month starting from July 1931
+for t in range(rolling_window, len(beta_df)):
+    monthly_beta = beta_df.iloc[t - 1]  # Beta values for month t-1
+    month_data = df_adj.iloc[t]  # Data for month t
+
+    # Prepare data for the cross-sectional regression
+    monthly_returns = month_data[dependent_variables]  # Excess returns for each portfolio
+    X = sm.add_constant(monthly_beta)  # Using previous month's betas
+    y = monthly_returns
+
+    # Convert columns to numeric in y and X
+    y = y.apply(pd.to_numeric, errors='coerce')
+    X = X.apply(pd.to_numeric, errors='coerce')
+
+    # Drop rows with missing values in y and X
+    y = y.dropna()
+    X = X.dropna()
+
+    model = sm.OLS(y, X, missing='drop')  # Drop missing values
     result = model.fit()
 
-    fm_results.append({
-        'Portfolio': portfolio,
+    fm_monthly_results.append({
+        'Month': month_data['Date'],
         'Alpha': result.params['const'],
-        'Beta': result.params['emkt'],
+        'Beta': result.params.iloc[1],  # Coefficient for beta
         'Alpha T-stat': result.tvalues['const'],
-        'Beta T-stat': result.tvalues['emkt'],
-        'R-squared adj': result.rsquared_adj
+        'Beta T-stat': result.tvalues.iloc[1],  # T-stat for beta
+        'R-squared adj': result.rsquared_adj,
+        'Observations': result.nobs
     })
 
-print(pd.DataFrame(fm_results))
+# Calculate average R-squared and average observations per cross-section
+avg_rsquared = np.mean([res['R-squared adj'] for res in fm_monthly_results])
+avg_observations = np.mean([res['Observations'] for res in fm_monthly_results])
+
+# Display Fama-MacBeth results
+fm_results_df = pd.DataFrame(fm_monthly_results)
+print(fm_results_df)
+
+print(f"Average Adjusted R-squared: {avg_rsquared}")
+print(f"Average Observations per Cross-section: {avg_observations}")
