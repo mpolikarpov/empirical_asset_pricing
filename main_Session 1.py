@@ -4,84 +4,7 @@ from scipy.stats import f
 from scipy.stats import chi2
 import statsmodels.api as sm
 
-# import data
-
-m = pd.read_csv('m.csv')
-vwm = pd.read_csv('vwm.csv')
-
-# define a date variable
-
-m['Date'] = pd.to_datetime(m['Date'], format='%Y%m')
-vwm['Date'] = pd.to_datetime(vwm['Date'], format='%Y%m')
-
-df = pd.merge(vwm, m, on='Date')
-
-# excess return on the benchmark asset and rf
-
-df['eMkt'] = df['Mkt-RF']/100
-df['rf'] = df['RF']/100
-
-portfolios = ['Lo 10', 'Dec-02', 'Dec-03', 'Dec-04', 'Dec-05', 'Dec-06', 'Dec-07', 'Dec-08', 'Dec-09', 'Hi 10']
-
-results = []
-residuals = []
-
-for portfolio in portfolios:
-    excess_return = df[portfolio] - df['RF']  # Calculating excess return for each portfolio
-    model = sm.OLS(excess_return, sm.add_constant(df['Mkt-RF']))
-    result = model.fit()
-
-    residuals.append(result.resid)
-
-    # Append the results summary to the list
-    results.append({
-        'Portfolio': portfolio,
-        'Alpha': result.params['const'],
-        'Beta': result.params['Mkt-RF'],
-        'Alpha T-stat': result.tvalues['const'],
-        'Beta T-stat': result.tvalues['Mkt-RF'],
-        'Alpha White se': result.get_robustcov_results(cov_type='HC0').HC1_se[0],
-        'Beta White se': result.get_robustcov_results(cov_type='HC0').HC1_se[1],
-        'Alpha White T-stat': result.params['const'] / result.get_robustcov_results(cov_type='HC1').HC1_se[0],
-        'Beta White T-stat': result.params['Mkt-RF'] / result.get_robustcov_results(cov_type='HC1').HC1_se[1],
-        'R-squared': result.rsquared,
-        'P-value': result.pvalues['Mkt-RF']
-    })
-
-# Convert results to a DataFrame
-results_df = pd.DataFrame(results)
-white_test = ['Portfolio','Alpha', 'Beta', 'Alpha White se', 'Beta White se', 'Alpha White T-stat', 'Beta White T-stat']
-results_df[white_test].to_csv('white_results.csv', index=True)
-
-# Number of portfolios
-num_portfolios = len(results)
-
-# Combine residuals into a matrix
-residual_matrix = np.column_stack(residuals)
-
-# Calculate the residual covariance matrix
-residual_covariance = np.cov(residual_matrix)
-
-# Calculate the mean excess return across portfolios
-mean_excess_returns = np.array([result['Alpha'] for result in results])
-
-# Calculate White's standard errors (heteroscedasticity-consistent standard errors)
-white_cov = np.linalg.inv(residual_matrix @ residual_matrix.T) @ (residual_matrix @ residual_matrix.T) @ residual_covariance @ (residual_matrix @ residual_matrix.T) @ np.linalg.inv(residual_matrix @ residual_matrix.T)
-white_std_errors = np.sqrt(np.diag(white_cov))
-
-# Check for NaN or infinite values in white_std_errors
-if np.any(np.isnan(white_std_errors)) or np.any(np.isinf(white_std_errors)):
-    print("NaN or infinite values encountered in White's standard errors calculation. Check your data or approach.")
-
-# Calculate Newey-West standard errors with lag length determined by Barlett kernel
-T = len(residuals[0])  # Number of observations
-lag = int(np.ceil(4 * (T / 100) ** (2 / 9)))  # Lag length using Barlett kernel
-newey_west_cov = sm.stats.sandwich_covariance.cov_hac(result, nlags=lag)
-newey_west_std_errors = np.sqrt(np.diag(newey_west_cov))
-
-# Print standard errors for each coefficient
-print("Newey-West Standard Errors:", newey_west_std_errors)
-
+# Function definition
 def grs_test(resid: np.ndarray, alpha: np.ndarray, factors: np.ndarray) -> tuple:
     """ Perform the Gibbons, Ross and Shaken (1989) test.
         :param resid: Matrix of residuals from the OLS of size TxK.
@@ -123,86 +46,112 @@ def grs_test(resid: np.ndarray, alpha: np.ndarray, factors: np.ndarray) -> tuple
 
     return dTestStat, pVal
 
-# Call the GRS test function
-grs_statistic, grs_p_value = grs_test(residual_matrix, mean_excess_returns.reshape(-1, 1), df[['Mkt-RF']].values)
+### ALL SAMPLE
 
-print("GRS Test Statistic:", grs_statistic)
-print("p-value:", grs_p_value)
+# import data
+m = pd.read_csv('m.csv')
+vwm = pd.read_csv('vwm.csv')
 
+# define a date variable
+m['Date'] = pd.to_datetime(m['Date'], format='%Y%m')
+vwm['Date'] = pd.to_datetime(vwm['Date'], format='%Y%m')
+df = pd.merge(vwm, m, on='Date')
+
+# excess return on the benchmark asset and rf
+df['eMkt'] = df['Mkt-RF']/100
+df['rf'] = df['RF']/100
+
+portfolios = ['Lo 10', 'Dec-02', 'Dec-03', 'Dec-04', 'Dec-05', 'Dec-06', 'Dec-07', 'Dec-08', 'Dec-09', 'Hi 10']
+
+results = []
+residuals = []
+
+# Compute the regression for each portfolio and SE, T-Stats for the estimated coefficients
+for portfolio in portfolios:
+    excess_return = df[portfolio] - df['RF']  # Calculating excess return for each portfolio
+    model = sm.OLS(excess_return, sm.add_constant(df['Mkt-RF']))
+    result = model.fit()
+
+    residuals.append(result.resid)
+
+    # Calculate Newey-West standard errors and T-stats
+    T = len(residuals[0])  # Number of observations
+    lag_value = int(np.ceil(4 * (T / 100) ** (2 / 9)))  # Lag length using Barlett kernel
+    result_NW = model.fit(cov_type='HAC', cov_kwds={'maxlags': lag_value})  # Adjust lag_value as needed
+    robust_results = result_NW.get_robustcov_results(cov_type='HAC', maxlags=lag_value)
+
+    # Append the results summary to the list
+    results.append({
+        'Portfolio': portfolio,
+
+        'Alpha': result.params['const'],
+        'Alpha T-stat': result.tvalues['const'],
+        'Alpha White se': result.get_robustcov_results(cov_type='HC0').HC1_se[0],
+        'Alpha White T-stat': result.params['const'] / result.get_robustcov_results(cov_type='HC1').HC1_se[0],
+        'Alpha NW se': robust_results.bse[0],
+        'Alpha NW T-stat': result.params['const'] / robust_results.bse[0],
+        'Alpha P-value': result.pvalues['const'],
+
+        'Beta': result.params['Mkt-RF'],
+        'Beta T-stat': result.tvalues['Mkt-RF'],
+        'Beta White se': result.get_robustcov_results(cov_type='HC0').HC1_se[1],
+        'Beta White T-stat': result.params['Mkt-RF'] / result.get_robustcov_results(cov_type='HC1').HC1_se[1],
+        'Beta NW se': robust_results.bse[1],
+        'Beta NW T-stat': result.params['Mkt-RF'] / robust_results.bse[1],
+        'Beta P-value': result.pvalues['Mkt-RF'],
+
+        'R-squared': result.rsquared
+
+    })
+
+# Convert results to a DataFrame
+results_df = pd.DataFrame(results)
+print(results_df.T)
+results_df.T.to_excel('results_regressions_sample.xlsx')
+
+# Using the GRS function
+residual_matrix = np.column_stack(residuals) # Combine residuals into a matrix
+residual_covariance = np.cov(residual_matrix) # Calculate the residual covariance matrix
+mean_excess_returns = np.array([result['Alpha'] for result in results]) # Calculate the mean excess return across portfolios
+grs_statistic, grs_p_value = grs_test(residual_matrix, mean_excess_returns.reshape(-1, 1), df[['Mkt-RF']].values) # Call the GRS test function
 
 # Calculate the Wald statistic for the joint test that all alphas are zero
 wald_statistic = grs_statistic * (len(residuals[0]) - len(mean_excess_returns) - 1) / len(mean_excess_returns)
+wald_p_value = 1 - f.cdf(wald_statistic, len(mean_excess_returns), len(residuals[0]) - len(mean_excess_returns) - 1) # Calculate the p-value using F-distribution
 
-# Calculate the p-value using F-distribution
-wald_p_value = 1 - f.cdf(wald_statistic, len(mean_excess_returns), len(residuals[0]) - len(mean_excess_returns) - 1)
+# Collect estimated alphas and their standard errors
+alphas = results_df.iloc[:,1]
+alphas_White_se = results_df.iloc[:,3]
+alphas_NW_se = results_df.iloc[:,5]
 
-print("Wald Statistic:", wald_statistic)
-print("p-value:", wald_p_value)
+# Construct covariance matrix based on the standard errors of alphas
+cov_matrix_alphas_White = np.diag(alphas_White_se)
+cov_matrix_alphas_NW = np.diag(alphas_NW_se)
 
-# Calculate the Wald statistic using White's standard errors
-alpha_vector = mean_excess_returns.reshape(-1, 1)
-wald_statistic_white = alpha_vector.T @ np.linalg.inv(white_cov) @ alpha_vector
-wald_p_value_white = 1 - chi2.cdf(wald_statistic_white, len(mean_excess_returns))
+# Compute the Wald statistic
+wald_statistic_White = (alphas @ np.linalg.inv(cov_matrix_alphas_White) @ alphas)
+wald_statistic_NW = (alphas @ np.linalg.inv(cov_matrix_alphas_NW) @ alphas)
+wald_df = len(alphas)  # Degrees of freedom for the chi-square distribution
+wald_p_value_White = 1 - chi2.cdf(wald_statistic_White, wald_df) # Calculate the p-value using the chi-square distribution
+wald_p_value_NW = 1 - chi2.cdf(wald_statistic_NW, wald_df) # Calculate the p-value using the chi-square distribution
 
-# Calculate the Wald statistic using Newey-West standard errors with lag
-wald_statistic_newey_west_lagged = alpha_vector.T @ np.linalg.inv(newey_west_cov) @ alpha_vector
-wald_p_value_newey_west_lagged = 1 - chi2.cdf(wald_statistic_newey_west_lagged, len(mean_excess_returns))
+stats = []
+stats.append({"GRS Test Statistic": grs_statistic,
+                 "GRS p-value": grs_p_value,
+                 "Wald Statistic": wald_statistic,
+                 "Wald p-value": wald_p_value,
+                 "Wald Statistic White": wald_statistic_White,
+                 "p-value White": wald_p_value_White,
+                 "Wald Statistic NW": wald_statistic_NW,
+                 "p-value NW": wald_p_value_NW
+})
 
-print("Wald Statistic (White's Standard Errors):", wald_statistic_white)
-print("p-value (White's Standard Errors):", wald_p_value_white)
-print("\nWald Statistic (Newey-West Standard Errors with Lag):", wald_statistic_newey_west_lagged)
-print("p-value (Newey-West Standard Errors with Lag):", wald_p_value_newey_west_lagged)
+# Convert the list of dictionaries to a DataFrame
+df_stats = pd.DataFrame(stats)
+print(df_stats.T)
+df_stats.T.to_excel("stats_sample.xlsx")
+
+### UP TO JUNE 1963
 
 
-"""
-Matlab code
-
-% excess returns on the test assets
-eBMport = tempPort(:,2:end)/100-rf;
-
-% check for errors
-plot([eMkt rf eBMport])
-mean([eMkt rf eBMport])*12
-std([eMkt rf eBMport])
-
-% run regressions for Question 2
-% number of observations
-T = size(eMkt,1);
-% matrix of the dependent variables
-Y = eBMport;
-% independent variable plus a column vector of ones
-X = [ones(T,1) eMkt];
-
-% estimate the coefficients
-B = X\Y; % = (X'*X)\(X'*Y);
-% residual from regression (T x 10 matrix of regression residuals)
-e = Y-X*B;
-% Covariance matrix of Bhat
-% covariance of Bhat first regression
-sum(e(:,1).^2)/(T-2)*inv(X'*X)
-% t-statistic of the first regression
-B(:,1)./sqrt(diag(sum(e(:,1).^2)/(T-2)*inv(X'*X)))
-% But we need the covariance matrix of all regression 
-% coefficients (e.g., interrelations between regressions)
-covB = kron(e'*e/(T-2),inv(X'*X));
-
-% Question 3
-xlswrite("Table1.xls",[B(1,:)' B(1,:)'./diag(covB(1:2:end,1:2:end)).^0.5 ...
-    B(2,:)' B(2,:)'./(diag(covB(2:2:end,2:2:end)).^0.5) ...
-    (1-sum(e.^2)./sum((Y-mean(Y)).^2))'])
-
-% Question 4
-% GRS test statistic
-GRSstatistic = (T-10-1)/10*(1/T)*(B(1,:)*inv(covB(1:2:end,1:2:end))*B(1,:)');
-pvalueGRS = 1-fcdf(GRSstatistic,10,T-10-1);
-
-% GRS pvalue is  0.0039 -> we reject the hypothesis that the market
-% portfolio is efficient at the 1% singificance level.
-
-% Question 5
-% Wald statistic
-Waldstat = B(1,:)*inv(covB(1:2:end,1:2:end))*B(1,:)';
-pvalueWaldstat = 1-chi2cdf(Waldstat,10);
-% Pvalue of Waldstat is 0.0033 -> we reject the hypothesis that the market
-% portfolio is efficient at the 1% singificance level.
-"""
+### STARTING JULY 1963
