@@ -121,9 +121,14 @@ print(fm_results_df)
 print(f"Average Alpha: {avg_alpha}")
 print(f"Average Beta: {avg_beta}")
 
-# Display NW T-stats
-print(f"Alpha NW T-stat: {np.mean([res['Alpha NW T-stat'] for res in fm_monthly_results])}")
-print(f"Beta NW T-stat: {np.mean([res['Beta NW T-stat'] for res in fm_monthly_results])}")
-
 print(f"Average Adjusted R-squared: {avg_rsquared}")
 print(f"Average Observations per Cross-section: {avg_observations}")
+
+# import additional data
+mw = pd.read_csv('market cap.csv')
+
+# define a date variable
+mw['Date'] = pd.to_datetime(mw['Date'], format='%Y%m')
+
+# merge
+df = pd.merge(df, mw, on='Date')
