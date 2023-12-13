@@ -60,6 +60,8 @@ df_adj = df.tail(len(beta_df))
 
 dependent_variables = beta_df.columns
 
+residuals = []
+
 # Loop through each month starting from July 1931
 for t in range(rolling_window, len(beta_df)):
     monthly_beta = beta_df.iloc[t - 1]  # Beta values for month t-1
@@ -77,9 +79,16 @@ for t in range(rolling_window, len(beta_df)):
     # Drop rows with missing values in y and X
     y = y.dropna()
     X = X.dropna()
-
     model = sm.OLS(y, X, missing='drop')  # Drop missing values
     result = model.fit()
+
+    residuals.append(result.resid)
+
+    # Calculate Newey-West standard errors and T-stats
+    T = len(residuals[0])  # Number of observations
+    lag_value = int(np.ceil(4 * (T / 100) ** (2 / 9)))  # Lag length using Barlett kernel
+    result_NW = model.fit(cov_type='HAC', cov_kwds={'maxlags': lag_value})  # Adjust lag_value as needed
+    robust_results = result_NW.get_robustcov_results(cov_type='HAC', maxlags=lag_value)
 
     fm_monthly_results.append({
         'Month': month_data['Date'],
@@ -88,8 +97,17 @@ for t in range(rolling_window, len(beta_df)):
         'Alpha T-stat': result.tvalues['const'],
         'Beta T-stat': result.tvalues.iloc[1],  # T-stat for beta
         'R-squared adj': result.rsquared_adj,
-        'Observations': result.nobs
+        'Observations': result.nobs,
+        'Alpha NW se': robust_results.bse[0],
+        'Alpha NW T-stat': result.params['const'] / robust_results.bse[0],
+        'Beta NW se': robust_results.bse[1],
+        'Beta NW T-stat': result.params.iloc[1] / robust_results.bse[1]
+
     })
+
+# Calculate average Alpha and Beta
+avg_alpha = np.mean([res['Alpha'] for res in fm_monthly_results])
+avg_beta = np.mean([res['Beta'] for res in fm_monthly_results])
 
 # Calculate average R-squared and average observations per cross-section
 avg_rsquared = np.mean([res['R-squared adj'] for res in fm_monthly_results])
@@ -98,6 +116,14 @@ avg_observations = np.mean([res['Observations'] for res in fm_monthly_results])
 # Display Fama-MacBeth results
 fm_results_df = pd.DataFrame(fm_monthly_results)
 print(fm_results_df)
+
+# Display coefficients
+print(f"Average Alpha: {avg_alpha}")
+print(f"Average Beta: {avg_beta}")
+
+# Display NW T-stats
+print(f"Alpha NW T-stat: {np.mean([res['Alpha NW T-stat'] for res in fm_monthly_results])}")
+print(f"Beta NW T-stat: {np.mean([res['Beta NW T-stat'] for res in fm_monthly_results])}")
 
 print(f"Average Adjusted R-squared: {avg_rsquared}")
 print(f"Average Observations per Cross-section: {avg_observations}")
