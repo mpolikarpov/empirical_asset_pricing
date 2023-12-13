@@ -1,0 +1,157 @@
+{\rtf1\ansi\ansicpg1251\cocoartf2639
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \\documentclass\{article\}\
+\\usepackage\{graphicx\} % Required for inserting images\
+\
+\\title\{Empirical Asset Pricing Homework\}\
+\\author\{R\'e9mi Montagu, Mikhail Polikarpov\}\
+\\date\{December 2023\}\
+\
+\\begin\{document\}\
+\
+\\maketitle\
+\
+\\section\{Time-Series Asset Pricing Tests\}\
+\
+\\subsection\{Additional t-statistics\}\
+\
+Accounting for heteroscedasticity and heteroscedasticity with standard errors of White, 1980 and standard errors of Newey and West, 1987.\
+\
+\\begin\{table\}[!ht]\
+    \\scriptsize\
+    \\centering\
+    \\begin\{tabular\}\{lllllllll\}\
+    \\hline\
+        Portfolio & $ \\alpha $ & $ \\alpha $ T-stat & $ \\alpha $ White T-stat & $ \\alpha $ NW T-stat & $ \\beta $ & $ \\beta $ T-stat & $ \\beta $ White T-stat & $ \\beta $ NW T-stat \\\\ \\hline\
+        Lo 10 & -0.0515 & -0.9735 & -0.9826 & -0.8268 & 1.0127 & 103.1479 & 66.9314 & 57.4554 \\\\ \
+        Dec-02 & 0.0817 & 1.7974 & 1.8981 & 1.9185 & 0.9502 & 112.4744 & 42.2548 & 33.1950 \\\\ \
+        Dec-03 & 0.0460 & 1.0488 & 1.0375 & 0.9779 & 0.9666 & 118.6148 & 83.3637 & 69.2066 \\\\ \
+        Dec-04 & -0.0428 & -0.7782 & -0.8225 & -0.7140 & 1.0441 & 102.1174 & 34.7756 & 24.1328 \\\\ \
+        Dec-05 & 0.0583 & 1.0637 & 1.0943 & 0.9052 & 0.9876 & 96.9903 & 46.4815 & 34.0216 \\\\ \
+        Dec-06 & 0.0962 & 1.3794 & 1.4156 & 1.1999 & 1.0385 & 80.1544 & 28.2268 & 18.2540 \\\\ \
+        Dec-07 & -0.0387 & -0.5020 & -0.5151 & -0.4240 & 1.0900 & 76.0506 & 29.5759 & 20.7979 \\\\ \
+        Dec-08 & 0.1474 & 1.7584 & 1.8373 & 1.6494 & 1.1439 & 73.4517 & 27.5431 & 19.1879 \\\\ \
+        Dec-09 & 0.1944 & 1.8738 & 1.9876 & 1.7434 & 1.2639 & 65.5805 & 23.6220 & 17.0253 \\\\ \
+        Hi 10 & 0.0646 & 0.4543 & 0.4913 & 0.4532 & 1.4442 & 54.7090 & 20.4065 & 16.1769 \\\\ \\hline\
+    \\end\{tabular\}\
+\\end\{table\}\
+\\begin\{center\}\
+\\begin\{minipage\}\{\\textwidth\}\
+\\small\
+\\textbf\{Notes:\} \
+\\end\{minipage\}\
+\\end\{center\}\
+\
+\\subsection\{Wald statistic\}\
+\
+\\begin\{table\}[!ht]\
+    \\scriptsize\
+    \\centering\
+    \\begin\{tabular\}\{llllllll\}\
+    \\hline\
+        GRS Statistic & GRS p-value & Wald Statistic & Wald p-value & Wald Statistic White & p-value White & Wald Statistic NW & p-value NW \\\\ \\hline\
+        2.6139 & 0.0038 & 302.1630 & 0.0000 & 1.1976 & 0.9996 & 1.0709 & 0.9998 \\\\ \\hline\
+    \\end\{tabular\}\
+\\end\{table\}\
+\
+\\subsection\{Two sub-samples\}\
+\
+Up to June 1963\
+\
+\\begin\{table\}[!ht]\
+    \\centering\
+    \\begin\{tabular\}\{lllllllll\}\
+    \\hline\
+        Portfolio & $ \\alpha $ & $ \\alpha $ T-stat & $ \\alpha $ White T-stat & $ \\alpha $ NW T-stat & $ \\beta $ & $ \\beta $ T-stat & $ \\beta $ White T-stat & $ \\beta $ NW T-stat \\\\ \\hline\
+        Lo 10 & -0.0392 & -0.5051 & -0.5170 & -0.4598 & 0.9765 & 82.3474 & 45.8378 & 44.9279 \\\\ \
+        Dec-02 & 0.1061 & 1.2596 & 1.3789 & 1.4786 & 0.9108 & 70.8218 & 26.3398 & 22.0360 \\\\ \
+        Dec-03 & 0.0253 & 0.3298 & 0.3276 & 0.3060 & 0.9623 & 82.0636 & 56.9337 & 52.4191 \\\\ \
+        Dec-04 & -0.1235 & -1.2323 & -1.3171 & -1.4445 & 1.1010 & 71.9084 & 23.8911 & 17.6378 \\\\ \
+        Dec-05 & 0.0696 & 0.7677 & 0.7880 & 0.7252 & 1.0539 & 76.1225 & 36.9698 & 30.8757 \\\\ \
+        Dec-06 & 0.0119 & 0.0932 & 0.0965 & 0.0950 & 1.1333 & 58.3059 & 20.9379 & 14.2756 \\\\ \
+        Dec-07 & -0.1740 & -1.2910 & -1.3329 & -1.3051 & 1.2280 & 59.6438 & 25.8551 & 20.4913 \\\\ \
+        Dec-08 & 0.1110 & 0.7607 & 0.7983 & 0.8569 & 1.2973 & 58.1968 & 23.5329 & 18.4903 \\\\ \
+        Dec-09 & 0.0779 & 0.3951 & 0.4145 & 0.3745 & 1.4710 & 48.8134 & 20.0265 & 16.5364 \\\\ \
+        Hi 10 & -0.1269 & -0.4492 & -0.4867 & -0.4847 & 1.6853 & 39.0500 & 16.4446 & 14.9144 \\\\ \\hline\
+    \\end\{tabular\}\
+\\end\{table\}\
+\
+\\begin\{table\}[!ht]\
+    \\centering\
+    \\begin\{tabular\}\{llllllll\}\
+    \\hline\
+        GRS Statistic & GRS p-value & Wald Statistic & Wald p-value & Wald Statistic White & p-value White & Wald Statistic NW & p-value NW \\\\ \\hline\
+        1.4166 & 0.1699 & 61.3384 & 0.0000 & 0.8081 & 0.9999 & 0.8256 & 0.9999 \\\\ \\hline\
+    \\end\{tabular\}\
+\\end\{table\}\
+\
+Starting in July 1963\
+\
+\\begin\{table\}[!ht]\
+    \\centering\
+    \\begin\{tabular\}\{lllllllll\}\
+    \\hline\
+        Portfolio & $ \\alpha $ & $ \\alpha $ T-stat & $ \\alpha $ White T-stat & $ \\alpha $ NW T-stat & $ \\beta $ & $ \\beta $ T-stat & $ \\beta $ White T-stat & $ \\beta $ NW T-stat \\\\ \\hline\
+        Lo 10 & -0.0659 & -0.9400 & -0.9309 & -0.7723 & 1.0595 & 68.3924 & 53.5570 & 47.7768 \\\\ \
+        Dec-02 & 0.0594 & 1.1649 & 1.1470 & 1.1232 & 1.0009 & 88.7877 & 67.5508 & 53.1025 \\\\ \
+        Dec-03 & 0.0578 & 1.0919 & 1.0760 & 1.0392 & 0.9724 & 83.0996 & 64.5388 & 48.5294 \\\\ \
+        Dec-04 & 0.0172 & 0.2772 & 0.2764 & 0.2198 & 0.9713 & 70.7660 & 50.3974 & 40.7364 \\\\ \
+        Dec-05 & 0.0641 & 0.9702 & 0.9695 & 0.8147 & 0.9018 & 61.6879 & 47.1754 & 38.8834 \\\\ \
+        Dec-06 & 0.1657 & 2.1675 & 2.1289 & 1.7695 & 0.9166 & 54.2086 & 38.9387 & 28.7516 \\\\ \
+        Dec-07 & 0.0701 & 0.8315 & 0.7997 & 0.5888 & 0.9128 & 48.9657 & 30.0220 & 22.9763 \\\\ \
+        Dec-08 & 0.1990 & 2.1785 & 2.0736 & 1.7181 & 0.9460 & 46.8446 & 29.4328 & 21.8970 \\\\ \
+        Dec-09 & 0.3050 & 3.0734 & 2.9976 & 2.4620 & 0.9972 & 45.4431 & 29.8754 & 23.7029 \\\\ \
+        Hi 10 & 0.2273 & 1.7037 & 1.6648 & 1.4060 & 1.1343 & 38.4415 & 26.3204 & 20.3911 \\\\ \\hline\
+    \\end\{tabular\}\
+\\end\{table\}\
+\
+\\begin\{table\}[!ht]\
+    \\centering\
+    \\begin\{tabular\}\{llllllll\}\
+    \\hline\
+        GRS Statistic & GRS p-value & Wald Statistic & Wald p-value & Wald Statistic White & p-value White & Wald Statistic NW & p-value NW \\\\ \\hline\
+        1.9386 & 0.0374 & 138.0316 & 0.0000 & 2.3728 & 0.9926 & 1.9806 & 0.9965 \\\\ \\hline\
+    \\end\{tabular\}\
+\\end\{table\}\
+\
+\\subsection\{Interpretation\}\
+\
+\
+\
+\\section\{Cross-sectional Asset Pricing Tests\}\
+\
+\\subsection\{Additional t-statistics\}\
+\
+\\begin\{table\}[!ht]\
+    \\centering\
+    \\begin\{tabular\}\{llll\}\
+    \\hline\
+        Coefficient & Estimation & T-stat & Newey and West T-stat \\\\ \\hline\
+        Alpha & 0.0083 & 4.8065 & 0.5358 \\\\ \
+        Beta & 0.0018 & 0.9269 & -0.3732 \\\\\
+        \\hline\
+    \\end\{tabular\}\
+\\end\{table\}\
+\
+\\subsection\{Additional explanatory variables\}\
+\
+\\begin\{table\}[!ht]\
+    \\centering\
+    \\begin\{tabular\}\{llll\}\
+    \\hline\
+        Coefficient & Estimation & T-stat & Newey and West T-stat \\\\ \\hline\
+        Alpha &  &  &  \\\\ \
+        Beta Market Portfolio &  &  &  \\\\\
+        Beta Ln of the Market Cap &  &  &  \\\\\
+        Beta Ln of the B/M Ration &  &  &  \\\\\
+        \\hline\
+    \\end\{tabular\}\
+\\end\{table\}\
+\
+\\end\{document\}\
+}
