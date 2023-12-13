@@ -113,22 +113,29 @@ avg_beta = np.mean([res['Beta'] for res in fm_monthly_results])
 avg_rsquared = np.mean([res['R-squared adj'] for res in fm_monthly_results])
 avg_observations = np.mean([res['Observations'] for res in fm_monthly_results])
 
-# Display Fama-MacBeth results
+# Fama-MacBeth results to data set
 fm_results_df = pd.DataFrame(fm_monthly_results)
-print(fm_results_df)
 
 # Display coefficients
 print(f"Average Alpha: {avg_alpha}")
 print(f"Average Beta: {avg_beta}")
-
 print(f"Average Adjusted R-squared: {avg_rsquared}")
 print(f"Average Observations per Cross-section: {avg_observations}")
 
 # import additional data
-mw = pd.read_csv('market cap.csv')
+mw = pd.read_csv('/Users/mikhail/PycharmProjects/Empirical_Asset_Pricing/market cap.csv')
+bm = pd.read_csv('/Users/mikhail/PycharmProjects/Empirical_Asset_Pricing/bm.csv')
 
 # define a date variable
 mw['Date'] = pd.to_datetime(mw['Date'], format='%Y%m')
+bm['Date'] = pd.to_datetime(bm['Date'], format='%Y')
+
+# Convet bm to monthly data
+bm.set_index('Date', inplace=True)
+monthly_data = bm.resample('M').ffill()
+monthly_data.reset_index(inplace=True)
+bm = monthly_data
 
 # merge
 df = pd.merge(df, mw, on='Date')
+df = pd.merge(df, bm, on='Date')
